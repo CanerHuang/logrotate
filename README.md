@@ -100,7 +100,9 @@ logrotate.SetOnError(func(key string, err error) {
 
 ## 關閉
 
-`Close()` 會先排空非同步緩衝(沖出仍在 channel 裡的 entry)、關閉 UDP 連線,再 flush/關閉檔案。建議 `defer logrotate.Close()`。Close 後若要再記錄,需重新 `Init()`。
+`Close()` 會先排空非同步緩衝(沖出仍在 channel 裡的 entry)、關閉 UDP 連線,再 flush/關閉檔案。建議 `defer logrotate.Close()`。
+
+`Close()` 是冪等且併發安全的:重複呼叫(例如 shutdown 流程呼一次、`defer` 又呼一次)是 no-op,不會 panic;Close 之後其他 goroutine 殘留的 log 也不會 panic —— UDP fan-out 會被丟棄,檔案輸出則會重新開檔續寫。要恢復 UDP 轉發,重新 `Init()` 並再次 `AddJSONUDP()` / `AddTextUDP()`。
 
 ## 進階存取
 
